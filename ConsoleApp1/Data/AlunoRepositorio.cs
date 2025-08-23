@@ -1,95 +1,113 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using ConsoleApp1;
 using Microsoft.Data.SqlClient;
+using System.Collections.Generic;
 
-namespace ConsoleApp1.Data
+public class AlunoRepositorio
 {
-    public class AlunoRepositorio
+    private SqlConnection _conn;
+
+    public AlunoRepositorio(SqlConnection conn)
     {
-        private SqlConnection _conn;
-        public AlunoRepositorio(SqlConnection conn)
+        _conn = conn;
+    }
+
+    public string InserirAluno(Aluno aluno)
+    {
+        try
         {
-            _conn = conn;
-        }
-        public string InserirAluno(Aluno aluno)
-        {
-            try
+            string sql = """
+                    INSERT INTO Aluno (
+                    Nome, 
+                    Idade,
+                    Cpf, 
+                    DataNascimento, 
+                    Cep, 
+                    Endereco, 
+                    Numero,
+                    Bairro,
+                    Cidade,
+                    Estado,
+                    Nota1, 
+                    Nota2
+                    ) VALUES (
+                    @Nome, 
+                    @Idade, 
+                    @Cpf, 
+                    @DataNascimento,
+                    @Cep,
+                    @Endereco, 
+                    @Numero,
+                    @Bairro,
+                    @Cidade,
+                    @Estado,
+                    @Nota1, 
+                    @Nota2
+                    );
+                    """;
+
+            using (SqlCommand comando = new SqlCommand(sql, _conn))
             {
-                string sql = @"INSERT INTO Aluno (Nome, Idade, Cpf, Endereco, Cep, Numero, Bairro, Cidade, Estado, Nota1, Nota2, DataNascimento) 
-                              VALUES(@Nome, @Idade, @Cpf, @Endereco, @Cep, @Numero, @Bairro, @Cidade, @Estado, @Nota1, @Nota2, @DataNascimento)";
-                SqlCommand comando = new SqlCommand(sql, _conn);
+                comando.Parameters.AddWithValue("@Nome", aluno.Nome);
+                comando.Parameters.AddWithValue("@Idade", aluno.Idade);
+                comando.Parameters.AddWithValue("@Cpf", aluno.Cpf);
+                comando.Parameters.AddWithValue("@DataNascimento", aluno.DataNascimento.ToString("yyyy-MM-dd"));
+                comando.Parameters.AddWithValue("@Cep", aluno.Cep); // CORRIGIDO: era aluno.Endereco
+                comando.Parameters.AddWithValue("@Endereco", aluno.Endereco);
+                comando.Parameters.AddWithValue("@Numero", aluno.Numero);
+                comando.Parameters.AddWithValue("@Bairro", aluno.Bairro);
+                comando.Parameters.AddWithValue("@Cidade", aluno.Cidade);
+                comando.Parameters.AddWithValue("@Estado", aluno.Estado);
+                comando.Parameters.AddWithValue("@Nota1", aluno.Nota1);
+                comando.Parameters.AddWithValue("@Nota2", aluno.Nota2);
 
-                comando.ExecuteNonQuery();
-
-                return "Aluno inserido com sucesso!";
+                if (comando.ExecuteNonQuery() > 0)
+                {
+                    return "Aluno inserido com sucesso!";
+                }
+                else
+                {
+                    return "Não foi possivel inserir Aluno!";
+                }
             }
-            catch (Exception e)
-            {
-
-                return "Erro ao inserir Aluno";
-            }
         }
-        public List<Aluno> BuscarAlunos()
+        catch (Exception ex)
         {
-            try
-            {
-                string sql = "select Nome, Idade, Cpf from Aluno";
-                SqlCommand comando = new SqlCommand(sql, _conn);
+            return "Erro ao inserir Aluno: " + ex.Message;
+        }
+    }
 
+    public List<Aluno> BuscarAlunos()
+    {
+        try
+        {
+            string sql = "SELECT Nome, Idade, Cpf FROM Aluno";
+            using (SqlCommand comando = new SqlCommand(sql, _conn))
+            {
                 List<Aluno> alunos = new List<Aluno>();
 
                 using (var reader = comando.ExecuteReader())
                 {
-                    //cria um leitor do ADO.net
-
                     while (reader.Read())
-                    {///vai lendo cada item do resultado do select
-                     ///retorna cada item encontrado
+                    {
                         var nomeDb = reader.GetString(reader.GetOrdinal("Nome"));
                         var idadeDb = reader.GetInt32(reader.GetOrdinal("Idade"));
                         var cpfDb = reader.GetString(reader.GetOrdinal("Cpf"));
-                        var enderecoDb = reader.GetString(reader.GetOrdinal("Endereco"));
-                        var cepDb = reader.GetString(reader.GetOrdinal("Cep"));
-                        var numeroDb = reader.GetString(reader.GetOrdinal("Numero"));
-                        var bairroDb = reader.GetString(reader.GetOrdinal("Bairro"));
-                        var cidadeDb = reader.GetString(reader.GetOrdinal("Cidade"));
-                        var estadoDb = reader.GetString(reader.GetOrdinal("Estado"));
-                        var nota1Db = reader.GetDouble(reader.GetOrdinal("Nota1"));
-                        var nota2Db = reader.GetDouble(reader.GetOrdinal("Nota2"));
-                        var datanascimentoDb = reader.GetDateTime(reader.GetOrdinal("DataNascimento"));
-                        var idDb = reader.GetInt32(reader.GetOrdinal("Id"));
 
                         alunos.Add(new Aluno()
                         {
                             Nome = nomeDb,
                             Idade = idadeDb,
-                            Cpf = cpfDb,
-                            Endereco = enderecoDb,
-                            Cep = cepDb,
-                            Numero = numeroDb, 
-                            Bairro = bairroDb,
-                            Cidade = cidadeDb,
-                            Estado = estadoDb,
-                            Nota1 = nota1Db,
-                            Nota2 = nota2Db,
-                            DataNascimento = datanascimentoDb,
-                            Id = idDb
-
+                            Cpf = cpfDb
                         });
-
                     }
-                    return alunos;
                 }
+                return alunos;
             }
-            catch (Exception e)
-            {
-
-                throw;
-            }
-
+        }
+        catch (Exception ex)
+        {
+            // Tratamento adequado da exceção
+            throw new Exception("Erro ao buscar alunos: " + ex.Message, ex);
         }
     }
 }
